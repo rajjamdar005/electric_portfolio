@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Siddhiraj Jamdar — Signal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080808;
+    --text: #F0F0F0;
+    --gold: #C8A96E;
+    --gold-dim: rgba(200,169,110,0.15);
+    --surface: #1A1A1A;
+    --muted: #444444;
+    --curve: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: auto; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* GRAIN OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.5;
+  }
+
+  /* CUSTOM CURSOR */
+  #cursor-dot {
+    position: fixed;
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 99999;
+    transform: translate(-50%, -50%);
+    transition: width 0.2s, height 0.2s;
+  }
+  #cursor-ring {
+    position: fixed;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 99998;
+    transform: translate(-50%, -50%);
+    transition: width 0.3s var(--curve), height 0.3s var(--curve), border-color 0.3s;
+  }
+
+  /* NAVBAR */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    padding: 24px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: border-bottom 0.5s;
+  }
+  nav.scrolled { border-bottom: 1px solid rgba(200,169,110,0.3); }
+  .nav-logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 20px;
+    color: var(--gold);
+    letter-spacing: 0.05em;
+  }
+  .nav-links { display: flex; gap: 40px; }
+  .nav-links a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: color 0.3s;
+  }
+  .nav-links a:hover { color: var(--gold); }
+
+  /* VOICEOVER TOGGLE */
+  #vo-toggle {
+    position: fixed;
+    top: 24px; right: 48px;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: none;
+    background: none;
+    border: 1px solid rgba(200,169,110,0.3);
+    border-radius: 20px;
+    padding: 6px 14px;
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  #vo-toggle:hover { border-color: var(--gold); background: var(--gold-dim); }
+  #vo-toggle.speaking { animation: vo-pulse 1.5s ease-in-out infinite; }
+  @keyframes vo-pulse {
+    0%, 100% { border-color: rgba(200,169,110,0.3); }
+    50% { border-color: var(--gold); box-shadow: 0 0 12px rgba(200,169,110,0.3); }
+  }
+
+  /* CANVAS */
+  #canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+  }
+
+  /* SCROLL CONTAINER */
+  #scroll-container {
+    position: relative;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* SECTIONS */
+  .section {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .section-inner {
+    position: relative;
+    max-width: 600px;
+    padding: 0 48px;
+  }
+
+  /* FILM SLATE */
+  .film-slate {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(200,169,110,0.6);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.6s var(--curve), transform 0.6s var(--curve);
+  }
+  .film-slate.visible { opacity: 1; transform: translateY(0); }
+
+  /* HERO */
+  #hero { height: 100vh; }
+  .hero-name {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(42px, 7vw, 80px);
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    opacity: 0;
+    transform: translateY(30px);
+    animation: heroReveal 1.2s var(--curve) 0.5s forwards;
+    text-shadow: 0 0 60px rgba(200,169,110,0.2);
+  }
+  .hero-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 17px;
+    color: var(--gold);
+    margin-top: 16px;
+    letter-spacing: 0.04em;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: heroReveal 1s var(--curve) 1s forwards;
+  }
+  .hero-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 32px;
+    letter-spacing: 0.1em;
+    opacity: 0;
+    animation: heroReveal 1s var(--curve) 1.4s forwards;
+  }
+  @keyframes heroReveal {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* SCROLL CHEVRON */
+  .scroll-hint {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    opacity: 0;
+    animation: heroReveal 1s var(--curve) 2s forwards;
+  }
+  .scroll-hint span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .chevron {
+    width: 20px;
+    height: 20px;
+    border-right: 1px solid var(--gold);
+    border-bottom: 1px solid var(--gold);
+    transform: rotate(45deg);
+    animation: chevronBounce 2s ease-in-out infinite;
+  }
+  @keyframes chevronBounce {
+    0%, 100% { transform: rotate(45deg) translateY(0); opacity: 1; }
+    50% { transform: rotate(45deg) translateY(6px); opacity: 0.5; }
+  }
+
+  /* ABOUT */
+  .about-text {
+    font-size: 16px;
+    line-height: 1.85;
+    color: rgba(240,240,240,0.8);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s var(--curve) 0.2s, transform 0.8s var(--curve) 0.2s;
+  }
+  .about-text.visible { opacity: 1; transform: translateY(0); }
+  .about-text p + p { margin-top: 20px; }
+  .about-highlight {
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  /* SKILLS */
+  #skills { height: 120vh; }
+  .skills-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    max-width: 560px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s var(--curve) 0.3s, transform 0.8s var(--curve) 0.3s;
+  }
+  .skills-grid.visible { opacity: 1; transform: translateY(0); }
+  .skill-cluster { width: 100%; margin-bottom: 8px; }
+  .cluster-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: rgba(200,169,110,0.5);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .skill-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skill-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    border: 1px solid rgba(200,169,110,0.25);
+    padding: 7px 14px;
+    border-radius: 2px;
+    background: rgba(26,26,26,0.8);
+    pointer-events: all;
+    cursor: none;
+    transition: border-color 0.3s, color 0.3s, background 0.3s, transform 0.3s var(--curve), box-shadow 0.3s;
+  }
+  .skill-tag:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(200,169,110,0.08);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(200,169,110,0.15);
+  }
+
+  /* PROJECTS */
+  #projects { height: 120vh; }
+  .projects-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    max-width: 520px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s var(--curve) 0.3s, transform 0.8s var(--curve) 0.3s;
+    pointer-events: all;
+  }
+  .projects-grid.visible { opacity: 1; transform: translateY(0); }
+  .project-card {
+    border: 1px solid rgba(200,169,110,0.15);
+    background: rgba(26,26,26,0.6);
+    padding: 24px 28px;
+    border-radius: 2px;
+    cursor: none;
+    transition: border-color 0.4s var(--curve), background 0.4s var(--curve), transform 0.4s var(--curve), box-shadow 0.4s var(--curve);
+    backdrop-filter: blur(10px);
+  }
+  .project-card:hover {
+    border-color: var(--gold);
+    background: rgba(200,169,110,0.05);
+    transform: translateX(6px);
+    box-shadow: -4px 0 30px rgba(200,169,110,0.12), 0 0 40px rgba(200,169,110,0.06);
+  }
+  .project-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(200,169,110,0.4);
+    letter-spacing: 0.15em;
+    margin-bottom: 10px;
+  }
+  .project-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+  .project-desc {
+    font-size: 13px;
+    color: rgba(240,240,240,0.5);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+  .project-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .project-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--gold);
+    border: 1px solid rgba(200,169,110,0.3);
+    padding: 3px 9px;
+    border-radius: 20px;
+  }
+
+  /* PROCESS */
+  #process { height: 100vh; }
+  .process-nodes {
+    display: flex;
+    gap: 0;
+    align-items: flex-start;
+    max-width: 560px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s var(--curve) 0.3s, transform 0.8s var(--curve) 0.3s;
+  }
+  .process-nodes.visible { opacity: 1; transform: translateY(0); }
+  .process-node {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+  .process-node::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, rgba(200,169,110,0.4), rgba(200,169,110,0.1));
+  }
+  .process-node:last-child::after { display: none; }
+  .node-dot {
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    background: var(--bg);
+    position: relative;
+    z-index: 1;
+    margin-bottom: 16px;
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .process-node.active .node-dot {
+    background: var(--gold);
+    box-shadow: 0 0 20px rgba(200,169,110,0.5);
+  }
+  .node-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .node-desc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-align: center;
+    line-height: 1.7;
+  }
+
+  /* CONTACT */
+  #contact { height: 100vh; }
+  .contact-inner {
+    text-align: center;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s var(--curve) 0.3s, transform 0.8s var(--curve) 0.3s;
+  }
+  .contact-inner.visible { opacity: 1; transform: translateY(0); }
+  .contact-cta {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+    margin-bottom: 20px;
+  }
+  .contact-name {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 5vw, 56px);
+    font-weight: 800;
+    color: var(--gold);
+    letter-spacing: -0.01em;
+    margin-bottom: 40px;
+    animation: breathe 4s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%, 100% { text-shadow: 0 0 40px rgba(200,169,110,0.3); }
+    50% { text-shadow: 0 0 80px rgba(200,169,110,0.6); }
+  }
+  .contact-links {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: center;
+    pointer-events: all;
+  }
+  .contact-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    transition: color 0.3s, letter-spacing 0.4s var(--curve);
+    cursor: none;
+  }
+  .contact-link:hover {
+    color: var(--gold);
+    letter-spacing: 0.18em;
+  }
+
+  /* PROGRESS BAR */
+  #progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 1px;
+    background: var(--gold);
+    z-index: 2000;
+    width: 0%;
+    transition: width 0.1s linear;
+    box-shadow: 0 0 8px var(--gold);
+  }
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div id="cursor-dot"></div>
+<div id="cursor-ring"></div>
+
+<!-- PROGRESS -->
+<div id="progress-bar"></div>
+
+<!-- NAVBAR -->
+<nav id="navbar">
+  <div class="nav-logo">SJ</div>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#skills">Stack</a>
+    <a href="#projects">Work</a>
+    <a href="#contact">Contact</a>
+  </div>
+</nav>
+
+<!-- VOICEOVER TOGGLE -->
+<button id="vo-toggle" onclick="toggleVoiceover()">
+  <svg width="10" height="12" viewBox="0 0 10 12" fill="none">
+    <rect x="3" y="0" width="4" height="7" rx="2" fill="currentColor"/>
+    <path d="M1 6c0 2.2 1.8 4 4 4s4-1.8 4-4" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/>
+    <line x1="5" y1="10" x2="5" y2="12" stroke="currentColor" stroke-width="1"/>
+  </svg>
+  <span id="vo-label">Narration</span>
+</button>
+
+<!-- THREE.JS CANVAS -->
+<canvas id="canvas"></canvas>
+
+<!-- SCROLL CONTENT -->
+<div id="scroll-container">
+
+  <!-- ACT I: HERO -->
+  <section class="section" id="hero">
+    <div class="section-inner">
+      <div class="hero-name">Siddhiraj<br>Jamdar</div>
+      <div class="hero-title">IoT Engineer. Systems Thinker. Builder.</div>
+      <div class="hero-sub">ESP32 · Embedded Systems · EngiiGenius</div>
+    </div>
+    <div class="scroll-hint">
+      <span>Scroll</span>
+      <div class="chevron"></div>
+    </div>
+  </section>
+
+  <!-- ACT II: ABOUT -->
+  <section class="section" id="about">
+    <div class="section-inner">
+      <div class="film-slate" data-reveal>001 / THE ARCHITECT</div>
+      <div class="about-text" data-reveal>
+        <p>IoT engineer. <span class="about-highlight">ESP32 specialist</span>. Co-founder of EngiiGenius — an industrial automation company building real-time control systems for manufacturing floors.</p>
+        <p>B.Tech in CS &amp; IoT at Silver Oak University, 2026. Builds systems that connect physical processes to digital pipelines. Embedded firmware to cloud dashboards. End-to-end. Production hardened.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT III: SKILLS -->
+  <section class="section" id="skills">
+    <div class="section-inner">
+      <div class="film-slate" data-reveal>002 / THE STACK</div>
+      <div class="skills-grid" data-reveal>
+        <div class="skill-cluster">
+          <div class="cluster-label">Embedded Systems</div>
+          <div class="skill-tags">
+            <div class="skill-tag">C</div>
+            <div class="skill-tag">C++</div>
+            <div class="skill-tag">ESP32</div>
+            <div class="skill-tag">RTOS</div>
+            <div class="skill-tag">PCB Design</div>
+          </div>
+        </div>
+        <div class="skill-cluster">
+          <div class="cluster-label">Software Layer</div>
+          <div class="skill-tags">
+            <div class="skill-tag">Python</div>
+            <div class="skill-tag">Go</div>
+            <div class="skill-tag">React.js</div>
+            <div class="skill-tag">System Design</div>
+          </div>
+        </div>
+        <div class="skill-cluster">
+          <div class="cluster-label">Craft</div>
+          <div class="skill-tags">
+            <div class="skill-tag">3D Modelling</div>
+            <div class="skill-tag">IoT Architecture</div>
+            <div class="skill-tag">Industrial Automation</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT IV: PROJECTS -->
+  <section class="section" id="projects">
+    <div class="section-inner" style="max-width:560px">
+      <div class="film-slate" data-reveal>003 / THE WORK</div>
+      <div class="projects-grid" data-reveal>
+        <div class="project-card">
+          <div class="project-number">PROJECT 001</div>
+          <div class="project-name">EngiiGenius Automation</div>
+          <div class="project-desc">Industrial IoT control system for manufacturing floors. Real-time monitoring, remote actuation, edge-computed alerts.</div>
+          <div class="project-tags">
+            <span class="project-tag">ESP32</span>
+            <span class="project-tag">MQTT</span>
+            <span class="project-tag">PCB Design</span>
+            <span class="project-tag">RTOS</span>
+          </div>
+        </div>
+        <div class="project-card">
+          <div class="project-number">PROJECT 002</div>
+          <div class="project-name">Sensor Mesh Network</div>
+          <div class="project-desc">Distributed environmental monitoring using ESP-NOW mesh topology. Sub-100ms latency across 40 nodes.</div>
+          <div class="project-tags">
+            <span class="project-tag">C++</span>
+            <span class="project-tag">LoRa</span>
+            <span class="project-tag">ESP-NOW</span>
+            <span class="project-tag">Edge</span>
+          </div>
+        </div>
+        <div class="project-card">
+          <div class="project-number">PROJECT 003</div>
+          <div class="project-name">Pulse Dashboard</div>
+          <div class="project-desc">Real-time industrial data visualization pipeline. WebSocket-fed time-series rendering at 60fps.</div>
+          <div class="project-tags">
+            <span class="project-tag">React</span>
+            <span class="project-tag">Go</span>
+            <span class="project-tag">WebSockets</span>
+            <span class="project-tag">InfluxDB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT V: PROCESS -->
+  <section class="section" id="process">
+    <div class="section-inner" style="max-width:560px">
+      <div class="film-slate" data-reveal>004 / THE METHOD</div>
+      <div class="process-nodes" data-reveal id="process-nodes">
+        <div class="process-node" data-node="0">
+          <div class="node-dot"></div>
+          <div class="node-title">Ideate</div>
+          <div class="node-desc">Problem.<br>Research.<br>Architecture.</div>
+        </div>
+        <div class="process-node" data-node="1">
+          <div class="node-dot"></div>
+          <div class="node-title">Prototype</div>
+          <div class="node-desc">Build.<br>Break.<br>Rebuild.</div>
+        </div>
+        <div class="process-node" data-node="2">
+          <div class="node-dot"></div>
+          <div class="node-title">Test</div>
+          <div class="node-desc">Measure.<br>Validate.<br>Harden.</div>
+        </div>
+        <div class="process-node" data-node="3">
+          <div class="node-dot"></div>
+          <div class="node-title">Deploy</div>
+          <div class="node-desc">Ship.<br>Monitor.<br>Iterate.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ACT VI: CONTACT -->
+  <section class="section" id="contact">
+    <div class="section-inner" style="text-align:center; max-width:500px; margin:0 auto; padding:0 48px;">
+      <div class="film-slate" data-reveal style="text-align:center">005 / OPEN CHANNEL</div>
+      <div class="contact-inner" data-reveal>
+        <div class="contact-cta">Got something worth building? Let's talk.</div>
+        <div class="contact-name">Siddhiraj Jamdar</div>
+        <div class="contact-links">
+          <a href="mailto:hello@siddhiraj.dev" class="contact-link">hello@siddhiraj.dev</a>
+          <a href="https://linkedin.com/in/siddhiraj-jamdar" class="contact-link" target="_blank">linkedin.com/in/siddhiraj-jamdar</a>
+          <a href="https://github.com/siddhiraj" class="contact-link" target="_blank">github.com/siddhiraj</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- THREE.JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+
+<script>
+// ─── VOICEOVER ENGINE ───────────────────────────────────────────
+let voiceEnabled = false;
+let currentUtterance = null;
+const voiceLines = {
+  hero:    "In a world running on signals… one engineer decided to design the noise.",
+  about:   "He doesn't describe what he does. He builds it, ships it, then moves on.",
+  skills:  "The stack isn't a list. It's a toolkit forged from five years of broken prototypes.",
+  projects:"Three systems. Three problems that needed solving. All of them in production.",
+  process: "Every system begins the same way. A question. Then silence. Then work.",
+  contact: "The channel is open. Whether you use it — that part's on you."
+};
+
+function speak(text) {
+  if (!voiceEnabled) return;
+  if (currentUtterance) window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 0.82;
+  utter.pitch = 0.88;
+  utter.volume = 0.9;
+  const voices = window.speechSynthesis.getVoices();
+  const preferred = voices.find(v => v.name.includes('Daniel') || v.name.includes('Google UK') || v.name.includes('Male'));
+  if (preferred) utter.voice = preferred;
+  utter.onstart = () => document.getElementById('vo-toggle').classList.add('speaking');
+  utter.onend = () => document.getElementById('vo-toggle').classList.remove('speaking');
+  currentUtterance = utter;
+  window.speechSynthesis.speak(utter);
+}
+
+function toggleVoiceover() {
+  voiceEnabled = !voiceEnabled;
+  const label = document.getElementById('vo-label');
+  if (!voiceEnabled) {
+    window.speechSynthesis.cancel();
+    document.getElementById('vo-toggle').classList.remove('speaking');
+    label.textContent = 'Narration';
+  } else {
+    label.textContent = 'Narration On';
+    speak(voiceLines.hero);
+  }
+}
+
+// ─── CURSOR ─────────────────────────────────────────────────────
+const dot = document.getElementById('cursor-dot');
+const ring = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+(function animCursor() {
+  dot.style.left = mx + 'px';
+  dot.style.top = my + 'px';
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px';
+  ring.style.top = ry + 'px';
+  requestAnimationFrame(animCursor);
+})();
+
+document.querySelectorAll('a, button, .skill-tag, .project-card').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    ring.style.width = '44px';
+    ring.style.height = '44px';
+    ring.style.borderColor = '#C8A96E';
+  });
+  el.addEventListener('mouseleave', () => {
+    ring.style.width = '28px';
+    ring.style.height = '28px';
+    ring.style.borderColor = 'rgba(200,169,110,0.7)';
+  });
+});
+
+// ─── PROGRESS BAR ───────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const pct = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+  document.getElementById('progress-bar').style.width = (pct * 100) + '%';
+  if (window.scrollY > 80) document.getElementById('navbar').classList.add('scrolled');
+  else document.getElementById('navbar').classList.remove('scrolled');
+});
+
+// ─── THREE.JS SCENE ─────────────────────────────────────────────
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x080808, 1);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x080808, 0.018);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 300);
+camera.position.set(0, 0, 40);
+
+// LIGHTING
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
+scene.add(ambientLight);
+
+const goldLight = new THREE.PointLight(0xC8A96E, 1.2, 80);
+goldLight.position.set(0, 10, 20);
+scene.add(goldLight);
+
+const goldLight2 = new THREE.PointLight(0xC8A96E, 0.6, 60);
+goldLight2.position.set(-20, -5, -20);
+scene.add(goldLight2);
+
+// TORUS KNOT (hero centerpiece)
+const torusGeo = new THREE.TorusKnotGeometry(8, 2.5, 200, 20, 2, 3);
+const torusMat = new THREE.MeshBasicMaterial({
+  color: 0xC8A96E,
+  wireframe: true,
+  transparent: true,
+  opacity: 0.55
+});
+const torusKnot = new THREE.Mesh(torusGeo, torusMat);
+torusKnot.position.set(12, 0, 0);
+scene.add(torusKnot);
+
+// PARTICLES
+const particleCount = 1800;
+const particleGeo = new THREE.BufferGeometry();
+const positions = new Float32Array(particleCount * 3);
+for (let i = 0; i < particleCount; i++) {
+  positions[i*3]   = (Math.random() - 0.5) * 200;
+  positions[i*3+1] = (Math.random() - 0.5) * 120;
+  positions[i*3+2] = (Math.random() - 0.5) * 200;
+}
+particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+const particleMat = new THREE.PointsMaterial({
+  color: 0xC8A96E,
+  size: 0.18,
+  transparent: true,
+  opacity: 0.5
+});
+const particles = new THREE.Points(particleGeo, particleMat);
+scene.add(particles);
+
+// FLOATING GRID PLANE (PCB feel)
+function createGridPlane(w, h, divisions, opacity) {
+  const geo = new THREE.PlaneGeometry(w, h, divisions, divisions);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0xC8A96E,
+    wireframe: true,
+    transparent: true,
+    opacity: opacity
+  });
+  return new THREE.Mesh(geo, mat);
+}
+
+const grid1 = createGridPlane(30, 20, 12, 0.08);
+grid1.rotation.x = -Math.PI / 6;
+grid1.position.set(-18, -8, -10);
+scene.add(grid1);
+
+const grid2 = createGridPlane(24, 16, 10, 0.06);
+grid2.rotation.x = -Math.PI / 5;
+grid2.position.set(20, -6, -50);
+scene.add(grid2);
+
+// IOT NODE NETWORK
+function createNodeNetwork() {
+  const group = new THREE.Group();
+  const nodePositions = [
+    [-5, 3, -30], [0, -2, -32], [6, 4, -28],
+    [-3, -4, -35], [4, 1, -25], [-7, 0, -38]
+  ];
+  const nodeMat = new THREE.MeshBasicMaterial({ color: 0xC8A96E });
+  nodePositions.forEach(pos => {
+    const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), nodeMat);
+    sphere.position.set(...pos);
+    group.add(sphere);
+  });
+  // connections
+  const lineMat = new THREE.LineBasicMaterial({ color: 0xC8A96E, transparent: true, opacity: 0.2 });
+  for (let i = 0; i < nodePositions.length - 1; i++) {
+    const pts = [new THREE.Vector3(...nodePositions[i]), new THREE.Vector3(...nodePositions[i+1])];
+    const lineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+    group.add(new THREE.Line(lineGeo, lineMat));
+  }
+  return group;
+}
+const nodeNetwork = createNodeNetwork();
+scene.add(nodeNetwork);
+
+// FLOATING SCREENS (project gallery)
+const screenGroup = new THREE.Group();
+[-14, 0, 14].forEach((xPos, i) => {
+  const geo = new THREE.PlaneGeometry(9, 13);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0x1A1A1A,
+    transparent: true,
+    opacity: 0.4,
+    side: THREE.DoubleSide
+  });
+  const screen = new THREE.Mesh(geo, mat);
+  screen.position.set(xPos, 0, -80 + i * 2);
+  // Gold border
+  const edges = new THREE.EdgesGeometry(geo);
+  const edgeMat = new THREE.LineBasicMaterial({ color: 0xC8A96E, transparent: true, opacity: 0.4 });
+  const edgeLines = new THREE.LineSegments(edges, edgeMat);
+  screen.add(edgeLines);
+  screenGroup.add(screen);
+});
+scene.add(screenGroup);
+
+// TIMELINE PLANE
+const timelineMat = new THREE.LineBasicMaterial({ color: 0xC8A96E, transparent: true, opacity: 0.5 });
+const timelinePoints = [
+  new THREE.Vector3(-18, -8, -115),
+  new THREE.Vector3(18, -8, -115)
+];
+const timelineGeo = new THREE.BufferGeometry().setFromPoints(timelinePoints);
+const timelineLine = new THREE.Line(timelineGeo, timelineMat);
+scene.add(timelineLine);
+
+// Timeline nodes
+[-14, -5, 5, 14].forEach(x => {
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(0.5, 12, 12),
+    new THREE.MeshBasicMaterial({ color: 0xC8A96E })
+  );
+  sphere.position.set(x, -8, -115);
+  scene.add(sphere);
+});
+
+// CONTACT GLOW
+const contactGlow = new THREE.PointLight(0xC8A96E, 0, 50);
+contactGlow.position.set(0, 0, -145);
+scene.add(contactGlow);
+
+// ─── SCROLL CAMERA ──────────────────────────────────────────────
+// Camera path: Z goes from 40 → -160 as scroll goes 0 → 1
+let targetCamZ = 40;
+let targetCamX = 0;
+let targetCamY = 0;
+let targetRotY = 0;
+
+const sectionVoiced = {};
+
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+window.addEventListener('scroll', () => {
+  const scrollPct = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+
+  // Camera Z travel
+  targetCamZ = 40 - scrollPct * 180;
+
+  // Per-section camera adjustments
+  if (scrollPct < 0.15) {
+    targetCamX = 0; targetCamY = 0; targetRotY = 0;
+    if (!sectionVoiced.hero) { sectionVoiced.hero = true; setTimeout(() => speak(voiceLines.hero), 400); }
+  } else if (scrollPct < 0.30) {
+    targetCamX = 6; targetCamY = 1; targetRotY = -0.08;
+    if (!sectionVoiced.about) { sectionVoiced.about = true; setTimeout(() => speak(voiceLines.about), 600); }
+  } else if (scrollPct < 0.50) {
+    targetCamX = 0; targetCamY = 4; targetRotY = 0.04;
+    if (!sectionVoiced.skills) { sectionVoiced.skills = true; setTimeout(() => speak(voiceLines.skills), 600); }
+  } else if (scrollPct < 0.70) {
+    targetCamX = -4; targetCamY = 0; targetRotY = 0.06;
+    if (!sectionVoiced.projects) { sectionVoiced.projects = true; setTimeout(() => speak(voiceLines.projects), 600); }
+  } else if (scrollPct < 0.85) {
+    targetCamX = 0; targetCamY = -3; targetRotY = 0;
+    if (!sectionVoiced.process) { sectionVoiced.process = true; setTimeout(() => speak(voiceLines.process), 600); }
+  } else {
+    targetCamX = 0; targetCamY = 0; targetRotY = 0;
+    if (!sectionVoiced.contact) { sectionVoiced.contact = true; setTimeout(() => speak(voiceLines.contact), 800); }
+  }
+
+  // Contact glow
+  const contactPct = Math.max(0, (scrollPct - 0.85) / 0.15);
+  contactGlow.intensity = contactPct * 2.0;
+});
+
+// ─── SCROLL REVEAL ───────────────────────────────────────────────
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      // Process nodes stagger
+      if (entry.target.id === 'process-nodes') {
+        entry.target.querySelectorAll('.process-node').forEach((node, i) => {
+          setTimeout(() => node.classList.add('active'), i * 300);
+        });
+      }
+    }
+  });
+}, { threshold: 0.2 });
+
+document.querySelectorAll('[data-reveal]').forEach(el => revealObserver.observe(el));
+
+// ─── ANIMATION LOOP ──────────────────────────────────────────────
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  // Torus knot rotation + breathe
+  torusKnot.rotation.y += 0.003;
+  torusKnot.rotation.x += 0.001;
+  const breathe = 1 + Math.sin(t * 0.8) * 0.02;
+  torusKnot.scale.setScalar(breathe);
+
+  // Particles drift
+  particles.rotation.y += 0.00015;
+  particles.rotation.x += 0.00008;
+
+  // Grid gentle float
+  grid1.position.y = -8 + Math.sin(t * 0.3) * 0.5;
+  grid2.position.y = -6 + Math.sin(t * 0.25 + 1) * 0.4;
+
+  // Gold light pulse
+  goldLight.intensity = 1.0 + Math.sin(t * 1.2) * 0.3;
+  goldLight.position.x = Math.sin(t * 0.4) * 15;
+  goldLight.position.y = 10 + Math.cos(t * 0.3) * 5;
+
+  // Smooth camera
+  camera.position.z += (targetCamZ - camera.position.z) * 0.06;
+  camera.position.x += (targetCamX - camera.position.x) * 0.04;
+  camera.position.y += (targetCamY - camera.position.y) * 0.04;
+  camera.rotation.y += (targetRotY - camera.rotation.y) * 0.04;
+
+  // Gentle sway at end
+  const scrollPct = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+  if (scrollPct > 0.85) {
+    camera.position.x += Math.sin(t * 0.4) * 0.008;
+    camera.position.y += Math.cos(t * 0.3) * 0.005;
+  }
+
+  // Screen hover tilt (subtle idle)
+  screenGroup.children.forEach((screen, i) => {
+    screen.rotation.y = Math.sin(t * 0.2 + i * 1.2) * 0.05;
+  });
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// ─── RESIZE ──────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ─── SMOOTH SCROLL NAV ───────────────────────────────────────────
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+// ─── AUDIO ENGINE (Procedural) ───────────────────────────────────
+let audioCtx = null;
+let audioStarted = false;
+
+function startAudio() {
+  if (audioStarted) return;
+  audioStarted = true;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const masterGain = audioCtx.createGain();
+    masterGain.gain.value = 0.12;
+    masterGain.connect(audioCtx.destination);
+
+    // Drone
+    const drone = audioCtx.createOscillator();
+    drone.type = 'sine';
+    drone.frequency.value = 62;
+    const droneGain = audioCtx.createGain();
+    droneGain.gain.value = 0.4;
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 200;
+    drone.connect(filter);
+    filter.connect(droneGain);
+    droneGain.connect(masterGain);
+    drone.start();
+
+    // Pad
+    const pad = audioCtx.createOscillator();
+    pad.type = 'triangle';
+    pad.frequency.value = 92;
+    const padGain = audioCtx.createGain();
+    padGain.gain.value = 0.2;
+    const lfo = audioCtx.createOscillator();
+    lfo.frequency.value = 0.1;
+    const lfoGain = audioCtx.createGain();
+    lfoGain.gain.value = 15;
+    lfo.connect(lfoGain);
+    lfoGain.connect(pad.frequency);
+    pad.connect(padGain);
+    padGain.connect(masterGain);
+    pad.start();
+    lfo.start();
+  } catch(e) {}
+}
+
+document.addEventListener('click', startAudio, { once: true });
+document.addEventListener('keydown', startAudio, { once: true });
+
+// hover sounds
+function playHoverTone() {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.frequency.value = 800 + Math.random() * 200;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.08);
+  } catch(e) {}
+}
+document.querySelectorAll('.skill-tag, .project-card, .nav-links a').forEach(el => {
+  el.addEventListener('mouseenter', playHoverTone);
+});
+</script>
+</body>
+</html>
